@@ -12,73 +12,49 @@ from db.session import engine
 Base = declarative_base()
 
 
-class Booking(Base):
+class Products(Base):
     __tablename__ = "bookings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    seatnr: Mapped[int] = mapped_column(Integer)
-    date: Mapped[datetime] = mapped_column(DateTime)
-    event_id: Mapped[int] = mapped_column(Integer, ForeignKey("events.id"))
-    attendee_id: Mapped[int] = mapped_column(Integer, ForeignKey("attendees.id"))
-
-    event: Mapped["Event"] = relationship(back_populates="bookings")
-    attendee: Mapped["Attendee"] = relationship(back_populates="bookings")
-
-
-class Event(Base):
-    __tablename__ = "events"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
-    date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    location_id: Mapped[int] = mapped_column(Integer, ForeignKey("locations.id"))
+    current_price: Mapped[float] = mapped_column(Integer, nullable=False)
+    in_stock: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    location: Mapped["Location"] = relationship(back_populates="events")
-    bookings: Mapped[List["Booking"]] = relationship(back_populates="event")
-    managers: Mapped[List["Manager"]] = relationship(back_populates="event")
-
-
-class Location(Base):
-    __tablename__ = "locations"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    capacity: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    events: Mapped[List[Event]] = relationship(back_populates="location")
+    history: Mapped[List["ProductHistory"]] = relationship("ProductHistory", back_populates="product")
+    sales: Mapped[List["ProductSales"]] = relationship("ProductSales", back_populates="product")
 
 
-class Contact(Base):
-    __tablename__ = "contacts"
+class ProductHistory(Base):
+    __tablename__ = "product_history"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    email: Mapped[str] = mapped_column(String, nullable=False)
-    phone: Mapped[str] = mapped_column(String, nullable=False)
+    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("products.id"))
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    price: Mapped[float] = mapped_column(Integer, nullable=False)
 
-    attendees: Mapped[List["Attendee"]] = relationship(back_populates="contact")
-    managers: Mapped[List["Manager"]] = relationship(back_populates="contact")
-
-
-class Attendee(Base):
-    __tablename__ = "attendees"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    contact_id: Mapped[int] = mapped_column(Integer, ForeignKey("contacts.id"))
-
-    contact: Mapped["Contact"] = relationship(back_populates="attendees")
-    bookings: Mapped[List["Booking"]] = relationship(back_populates="attendee")
+    product: Mapped[Products] = relationship(back_populates="history")
 
 
-class Manager(Base):
-    __tablename__ = "managers"
+class ProductSales(Base):
+    __tablename__ = "product_sales"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    contact_id: Mapped[int] = mapped_column(Integer, ForeignKey("contacts.id"))
-    event_id: Mapped[int] = mapped_column(Integer, ForeignKey("events.id"))
+    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("products.id"))
+    sales_id: Mapped[int] = mapped_column(Integer, ForeignKey("sales.id"))
 
-    contact: Mapped["Contact"] = relationship(back_populates="managers")
-    event: Mapped["Event"] = relationship(back_populates="managers")
+    product: Mapped[Products] = relationship("Products")
+    sale: Mapped[Sales] = relationship("Sales")
+
+
+class Sales(Base):
+    __tablename__ = "sales"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    price: Mapped[float] = mapped_column(Integer, nullable=False)
+    amount: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    product_sale: Mapped[List["ProductSales"]] = relationship("ProductSales", back_populates="sale")
 
 
 Base.metadata.create_all(engine)
